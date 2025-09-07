@@ -7,7 +7,7 @@ import ast
 from copy import copy
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.signal import convolve
 from scipy.stats import norm,lognorm,expon
 from astropy.io import fits
@@ -26,6 +26,10 @@ except ImportError:
         # Units
         FNU = u.erg / (u.cm**2 * u.s * u.Hz)
         FLAM = u.erg / (u.cm**2 * u.s * u.AA)
+        # if in_x is unitless, assume Angstrom
+        if not isinstance(in_x, u.Quantity):
+            in_x = in_x * u.Angstrom
+
         def blackbody_nu(in_x, temperature):
             # Convert to units for calculations, also force double precision
             with u.add_enabled_equivalencies(u.spectral() + u.temperature()):
@@ -1330,9 +1334,9 @@ def generateBEffEmissionLines(M1450,**kwargs):
         x2 = np.random.random(len(M_i))
         x3 = np.random.random(len(M_i))
     #
-    useLines = ~np.in1d(lineCatalog['name'],excludeLines)
+    useLines = ~np.isin(lineCatalog['name'],excludeLines)
     if onlyLines is not None:
-        useLines &= np.in1d(lineCatalog['name'],onlyLines)
+        useLines &= np.isin(lineCatalog['name'],onlyLines)
     if minEw is not None:
         logEw = np.polyval(lineCatalog['logEW'][:,1].T,-25)
         useLines &= logEw > np.log10(minEw)
@@ -1412,7 +1416,7 @@ class VW01FeTemplateGrid(object):
             wi1,wi2 = np.searchsorted(wave,(w1,w2))
             feTemplate[wi1:wi2] *= fscl
         # calculate the total flux (actually, EW since continuum is divided out)
-        flux0 = simps(feTemplate,wave)
+        flux0 = simpson(feTemplate,wave)
         FWHM_1Zw1 = 900.
         c_kms = 3e5
         sigma_conv = np.sqrt(FWHM_kms**2 - FWHM_1Zw1**2) / \
@@ -1422,7 +1426,7 @@ class VW01FeTemplateGrid(object):
         gkern = np.exp(-x**2/(2*sigma_conv**2)) / (np.sqrt(2*np.pi)*sigma_conv)
         broadenedTemp = convolve(feTemplate,gkern,mode='same')
         feFlux = broadenedTemp
-        feFlux *= flux0/simps(feFlux,wave)
+        feFlux *= flux0/simpson(feFlux,wave)
         return wave,feFlux
     def get(self,z):
         zi = np.searchsorted(self.zbins,z)

@@ -4,7 +4,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 from scipy.interpolate import interp1d
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.constants import c
 c_Angs = c*1e10
 
@@ -332,7 +332,7 @@ def load_photo_map(photSystems):
                              fdat.Rlam.astype(np.float64),
                              bounds_error=False,fill_value=0.0,kind='slinear')
             # precompute the bandpass normalization
-            norm = simps(fdat.Rlam/fdat.lam, fdat.lam)
+            norm = simpson(fdat.Rlam/fdat.lam, fdat.lam)
             bandpasses[bpName] = dict(Rlam=fcurv,norm=norm,data=fdat)
             if photSys['uncMap'] is not None:
                 mapObserved[bpName] = photSys['uncMap'](band)

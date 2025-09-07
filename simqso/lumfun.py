@@ -5,8 +5,8 @@ import itertools
 from collections import OrderedDict
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.integrate import quad,dblquad,romberg,simps
-from scipy.ndimage.filters import convolve
+from scipy.integrate import quad,dblquad,romb,simpson
+from scipy.ndimage import convolve
 from scipy import optimize
 from scipy.special import hyp2f1
 from scipy.stats import poisson
@@ -220,8 +220,9 @@ class DoublePowerLawLF(LuminosityFunction):
         zin = kwargs.pop('zin',None)
         verbose = kwargs.pop('verbose',0)
         eps_M,eps_z = 5e-2,2e-2
-        nM = int(-np.diff(Mrange(zrange)) / eps_M)
-        nz = int(np.diff(zrange) / eps_z)
+        assert len(zrange) == 2
+        nM = int(-np.diff(Mrange(zrange))[0] / eps_M)
+        nz = int(np.diff(zrange)[0] / eps_z)
         if zin is None:
             # integrate across redshift to get the dN/dz distribution
             skyfrac = kwargs.get('skyArea',skyDeg2) / skyDeg2
@@ -574,9 +575,9 @@ class FastQLFIntegrator(QLFIntegrator):
     def __call__(self,Phi_Mz,p_Mz,par):
         #
         integrand = lambda M,z: Phi_Mz(M,z,par) * p_Mz(M,z) * self.dVdzdO(z)
-        inner = lambda z: romberg(integrand,*self.Mrange,args=(z,),
+        inner = lambda z: romb(integrand,*self.Mrange,args=(z,),
                                   **self.int_kwargs)
-        outer = romberg(inner,*self.zrange,**self.int_kwargs)
+        outer = romb(inner,*self.zrange,**self.int_kwargs)
         return outer
 
 class FasterQLFIntegrator(QLFIntegrator):
@@ -610,8 +611,8 @@ class FasterQLFIntegrator(QLFIntegrator):
         p_Mz_grid,mask = self._get_p_Mz_grid(p_Mz)
         Phi_Mz_grid = Phi_Mz(self.Mi,self.zi,par)
         #
-        lfsum_z = simps(Phi_Mz_grid * p_Mz_grid * self.dV, dx=self.zBinW)
-        lfsum = simps(lfsum_z, dx=self.MBinW)
+        lfsum_z = simpson(Phi_Mz_grid * p_Mz_grid * self.dV, dx=self.zBinW)
+        lfsum = simpson(lfsum_z, dx=self.MBinW)
         return lfsum
 
 def joint_qlf_likelihood_fun(par,surveys,lfintegrator,Phi_Mz,verbose):
