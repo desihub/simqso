@@ -53,16 +53,12 @@ jobs:
                 python-version: ${{ matrix.python-version }}
             - name: Install Python dependencies
               run: |
-                echo original pip version is
-                pip --version
                 python -m pip install --upgrade 'pip<25' setuptools wheel
-                echo updated pip version is
-                pip --version
                 python -m pip install pytest
                 python -m pip install -r requirements.txt
                 python -m pip install --upgrade --upgrade-strategy only-if-needed "numpy${{ matrix.numpy-version }}"
                 python -m pip install --upgrade --upgrade-strategy only-if-needed "scipy${{ matrix.scipy-version }}"
                 python -m pip install --upgrade --upgrade-strategy only-if-needed "astropy${{ matrix.astropy-version }}"
-                python -m pip install --editable .
+                python -m pip install .
             - name: Run the test
               run: pytest
